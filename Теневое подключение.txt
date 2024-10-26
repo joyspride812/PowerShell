@@ -1,0 +1,70 @@
+Add-Type -AssemblyName System.Windows.Forms
+[System.Windows.Forms.Application]::EnableVisualStyles()
+
+$MainForm                            = New-Object system.Windows.Forms.Form
+$MainForm.ClientSize                 = '460,410'
+$MainForm.text                       = "TS Shadow"
+$MainForm.TopMost                    = $false
+
+$lbluName                         = New-Object system.Windows.Forms.Label
+$lbluName.text                     = "Username:"
+$lbluName.AutoSize                 = $true
+$lbluName.width                    = 25
+$lbluName.height                   = 22
+$lbluName.location                 = New-Object System.Drawing.Point(20,19)
+$lbluName.Font                     = 'Microsoft Sans Serif,10'
+
+$txtuName                        = New-Object system.Windows.Forms.TextBox
+$txtuName.multiline              = $false
+$txtuName.width                  = 200
+$txtuName.height                 = 22
+$txtuName.location               = New-Object System.Drawing.Point(95,17)
+$txtuName.Font                   = 'Microsoft Sans Serif,10'
+$txtuName.Text                   = ""
+
+$btnSessSearch                         = New-Object system.Windows.Forms.Button
+$btnSessSearch.text                    = "Поиск сессии"
+$btnSessSearch.width                   = 130
+$btnSessSearch.height                  = 22
+$btnSessSearch.location                = New-Object System.Drawing.Point(305,18)
+$btnSessSearch.Font                    = 'Microsoft Sans Serif,10'
+$btnSessSearch.Add_Click(
+{ 
+if ($txtuName.Text -ne "") {
+$usr = $txtuName.Text
+
+$ServerNames = get-adcomputer -Filter {enabled -eq $true}|?{$_.name -match "rolf-ts\d+"}|select name
+
+foreach ($SRVName in $ServerNames) {
+$ServerName = $SRVName.name
+$queryResults = qwinsta /server:$ServerName
+$sess = $queryResults -match "\s$usr\s"
+if ($sess) {
+  $sess = $sess -replace '\s+',','
+  $id = $sess -split ','
+  $id_arg = $id[3]
+  mstsc /shadow:$id_arg /v:$ServerName /control
+  break
+    }
+  else
+     { $txtOutput.Text  += "Пользователь $usr не найден на $ServerName`r`n" }
+  } 
+  }
+  else
+     { $txtOutput.Text  = "Введите учетную запись для поиска сессии`r`n" }
+})
+
+
+$txtOutput                        = New-Object system.Windows.Forms.TextBox
+$txtOutput.multiline              = $true
+$txtOutput.ScrollBars             = "Vertical"
+$txtOutput.BackColor              = "#012456"
+$txtOutput.ForeColor              = "#ffffff"
+$txtOutput.width                  = 415
+$txtOutput.height                 = 335
+$txtOutput.location               = New-Object System.Drawing.Point(20,55)
+$txtOutput.Font                   = 'Consolas,8,style=Bold'
+
+
+$MainForm.controls.AddRange(@($txtuName,$lbluName,$btnSessSearch,$txtOutput))
+$MainForm.ShowDialog()
